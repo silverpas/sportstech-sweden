@@ -1,0 +1,122 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-display: "Sora", system-ui, sans-serif;
+  --font-sans: "IBM Plex Sans", system-ui, sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: #f4f6f9;
+  color: #151a24;
+  -webkit-font-smoothing: antialiased;
+}
+
+@layer components {
+  .container-page {
+    @apply mx-auto w-full max-w-7xl px-5 sm:px-8;
+  }
+
+  .chip {
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
+  }
+
+  .card {
+    @apply rounded-2xl border border-line bg-surface shadow-card transition duration-200;
+  }
+
+  .card-hover {
+    @apply hover:-translate-y-0.5 hover:shadow-card-hover;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-navy
+      px-5 py-2.5 font-semibold text-white transition hover:bg-navy-700;
+  }
+
+  .btn-gold {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-gold
+      px-5 py-2.5 font-semibold text-navy-900 transition hover:brightness-95;
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg border
+      border-line bg-surface px-5 py-2.5 font-semibold text-ink transition
+      hover:border-ink-muted;
+  }
+
+  .field {
+    @apply w-full rounded-lg border border-line bg-surface px-3.5 py-2.5
+      text-sm text-ink placeholder-ink-muted outline-none transition
+      focus:border-navy focus:ring-2 focus:ring-navy/10;
+  }
+
+  .label {
+    @apply mb-1.5 block text-sm font-medium text-ink-soft;
+  }
+
+  .eyebrow {
+    @apply inline-flex items-center gap-2 text-xs font-semibold uppercase
+      tracking-[0.2em] text-gold;
+  }
+}
+
+/* --- Immersive hero (animated gradient mesh + grid) --------------------- */
+.hero-navy {
+  position: relative;
+  overflow: hidden;
+  background: #14142b;
+  isolation: isolate;
+}
+.hero-navy::before {
+  content: "";
+  position: absolute;
+  inset: -25%;
+  z-index: -2;
+  background:
+    radial-gradient(38% 48% at 18% 22%, rgba(245, 197, 0, 0.16), transparent 60%),
+    radial-gradient(45% 55% at 84% 12%, rgba(64, 84, 214, 0.30), transparent 62%),
+    radial-gradient(48% 58% at 62% 92%, rgba(181, 23, 158, 0.16), transparent 62%);
+  filter: blur(24px);
+  animation: drift 20s ease-in-out infinite;
+}
+.hero-grid {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 46px 46px;
+  -webkit-mask-image: radial-gradient(72% 62% at 50% 38%, #000 30%, transparent 86%);
+  mask-image: radial-gradient(72% 62% at 50% 38%, #000 30%, transparent 86%);
+}
+
+@keyframes drift {
+  0% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(-3%, 2%, 0) scale(1.05); }
+  100% { transform: translate3d(0, 0, 0) scale(1); }
+}
+
+/* --- Scroll reveal ----------------------------------------------------- */
+.reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform;
+}
+.reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal { opacity: 1; transform: none; transition: none; }
+  .hero-navy::before { animation: none; }
+}
