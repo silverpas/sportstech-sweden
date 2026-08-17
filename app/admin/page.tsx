@@ -28,6 +28,12 @@ export default function AdminPage() {
   }
 
   async function act(id: number, action: "approve" | "reject") {
+    if (action === "reject") {
+      const ok = window.confirm(
+        "Reject and permanently delete this submission? This cannot be undone."
+      );
+      if (!ok) return;
+    }
     try {
       const res = await fetch("/api/admin", {
         method: "POST",
@@ -52,7 +58,10 @@ export default function AdminPage() {
           }}
           className="card mx-auto max-w-sm p-6"
         >
-          <h1 className="mb-4 font-display text-xl font-semibold text-ink">Admin</h1>
+          <h1 className="mb-1 font-display text-xl font-semibold text-ink">Admin</h1>
+          <p className="mb-4 text-sm text-ink-muted">
+            Review and approve startup submissions before they go live.
+          </p>
           <label className="label" htmlFor="token">Admin password</label>
           <input
             id="token"
@@ -72,14 +81,20 @@ export default function AdminPage() {
 
   return (
     <div className="container-page py-10">
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-2 flex items-center justify-between">
         <h1 className="font-display text-2xl font-bold text-ink">
-          Pending submissions
+          Pending submissions {pending.length > 0 && `(${pending.length})`}
         </h1>
         <button onClick={() => load(token)} className="btn-ghost text-sm">
           Refresh
         </button>
       </div>
+      <p className="mb-6 text-sm text-ink-muted">
+        <strong className="text-sector-athletes">Approve</strong> publishes the
+        company on the site immediately.{" "}
+        <strong className="text-red-600">Reject</strong> permanently deletes
+        the submission — this cannot be undone.
+      </p>
 
       {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
 
@@ -109,18 +124,20 @@ export default function AdminPage() {
                     </p>
                   )}
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-col gap-2 sm:flex-row">
                   <button
                     onClick={() => act(c.id, "approve")}
+                    title="Publish this company on the site"
                     className="rounded-lg bg-sector-athletes px-4 py-2 text-sm font-semibold text-white transition hover:brightness-95"
                   >
-                    Approve
+                    Approve &amp; publish
                   </button>
                   <button
                     onClick={() => act(c.id, "reject")}
+                    title="Permanently delete this submission"
                     className="rounded-lg border border-red-300 px-4 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-50"
                   >
-                    Reject
+                    Reject &amp; delete
                   </button>
                 </div>
               </div>
