@@ -17,6 +17,7 @@ export type Company = {
   status: string | null;
   comment: string | null;
   moderation_status?: string | null;
+  pending_changes?: Record<string, unknown> | null;
 };
 
 export type Investor = {

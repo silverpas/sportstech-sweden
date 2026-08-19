@@ -37,15 +37,23 @@ export default async function CompanyPage({
 
   return (
     <div className="container-page py-10">
-      <Link
-        href="/companies"
-        className="mb-6 inline-flex items-center gap-1.5 text-sm text-ink-soft hover:text-navy"
-      >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M19 12H5M11 18l-6-6 6-6" />
-        </svg>
-        Back to companies
-      </Link>
+      <div className="mb-6 flex items-center justify-between">
+        <Link
+          href="/companies"
+          className="inline-flex items-center gap-1.5 text-sm text-ink-soft hover:text-navy"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M19 12H5M11 18l-6-6 6-6" />
+          </svg>
+          Back to companies
+        </Link>
+        <Link
+          href={`/company/${company.id}/edit`}
+          className="text-sm text-ink-soft hover:text-navy"
+        >
+          Suggest an edit
+        </Link>
+      </div>
 
       {/* Header */}
       <div className="card relative overflow-hidden p-6 sm:p-8">

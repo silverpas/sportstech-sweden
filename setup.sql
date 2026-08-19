@@ -24,3 +24,8 @@ alter table companies
 
 -- Optional: quick check
 -- select moderation_status, count(*) from companies group by moderation_status;
+
+-- 4. Add a column to hold a suggested edit to an already-published company,
+--    pending admin review. Null means no pending edit for that company.
+alter table companies
+  add column if not exists pending_changes jsonb;

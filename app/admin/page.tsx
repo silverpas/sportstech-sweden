@@ -2,6 +2,31 @@
 
 import { useState } from "react";
 import type { Company } from "@/lib/types";
+import { FIELDS } from "@/lib/companyFields";
+
+const LABEL_BY_KEY = new Map(FIELDS.map((f) => [f.name, f.label]));
+
+function humanize(key: string): string {
+  return key.replace(/_/g, " ").replace(/^./, (s) => s.toUpperCase());
+}
+
+function displayValue(v: unknown): string {
+  return v === null || v === undefined || v === "" ? "—" : String(v);
+}
+
+/** Diff a company's live columns against its proposed pending_changes. */
+function changedFields(c: Company): { key: string; label: string; from: string; to: string }[] {
+  if (!c.pending_changes) return [];
+  const out: { key: string; label: string; from: string; to: string }[] = [];
+  for (const [key, newValue] of Object.entries(c.pending_changes)) {
+    const oldValue = (c as unknown as Record<string, unknown>)[key];
+    const from = displayValue(oldValue);
+    const to = displayValue(newValue);
+    if (from === to) continue;
+    out.push({ key, label: LABEL_BY_KEY.get(key) ?? humanize(key), from, to });
+  }
+  return out;
+}
 
 export default function AdminPage() {
   const [token, setToken] = useState("");
@@ -27,11 +52,12 @@ export default function AdminPage() {
     }
   }
 
-  async function act(id: number, action: "approve" | "reject") {
+  async function act(id: number, action: "approve" | "reject", isEdit: boolean) {
     if (action === "reject") {
-      const ok = window.confirm(
-        "Reject and permanently delete this submission? This cannot be undone."
-      );
+      const message = isEdit
+        ? "Discard these suggested changes? The company listing will be unaffected."
+        : "Reject and permanently delete this submission? This cannot be undone.";
+      const ok = window.confirm(message);
       if (!ok) return;
     }
     try {
@@ -90,10 +116,11 @@ export default function AdminPage() {
         </button>
       </div>
       <p className="mb-6 text-sm text-ink-muted">
-        <strong className="text-sector-athletes">Approve</strong> publishes the
-        company on the site immediately.{" "}
-        <strong className="text-red-600">Reject</strong> permanently deletes
-        the submission — this cannot be undone.
+        New submissions: <strong className="text-sector-athletes">Approve</strong>{" "}
+        publishes the company immediately, <strong className="text-red-600">Reject</strong>{" "}
+        permanently deletes it. Suggested edits: <strong className="text-sector-athletes">Approve</strong>{" "}
+        applies the changes, <strong className="text-ink">Discard</strong> cancels
+        them — the company itself is never affected.
       </p>
 
       {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
@@ -104,45 +131,74 @@ export default function AdminPage() {
         </div>
       ) : (
         <div className="grid gap-4">
-          {pending.map((c) => (
-            <div key={c.id} className="card p-5">
-              <div className="flex flex-wrap items-start justify-between gap-4">
-                <div className="min-w-0">
-                  <h3 className="font-display text-base font-semibold text-ink">
-                    {c.name}
-                  </h3>
-                  <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm text-ink-muted">
-                    {c.location && <span>{c.location}</span>}
-                    {c.sector && <span>{c.sector}</span>}
-                    {c.industry && <span>{c.industry}</span>}
-                    {c.funding_stage && <span>{c.funding_stage}</span>}
-                    {c.website && <span className="text-navy">{c.website}</span>}
+          {pending.map((c) => {
+            const isEdit = Boolean(c.pending_changes);
+            const diff = isEdit ? changedFields(c) : [];
+            return (
+              <div key={c.id} className="card p-5">
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="font-display text-base font-semibold text-ink">
+                        {c.name}
+                      </h3>
+                      {isEdit && (
+                        <span className="chip bg-navy/5 text-xs text-navy">
+                          Suggested edit
+                        </span>
+                      )}
+                    </div>
+
+                    {isEdit ? (
+                      diff.length > 0 ? (
+                        <ul className="mt-2 space-y-1 text-sm text-ink-soft">
+                          {diff.map((d) => (
+                            <li key={d.key}>
+                              <span className="text-ink-muted">{d.label}:</span> {d.from}{" "}
+                              <span className="text-ink-muted">→</span> {d.to}
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="mt-2 text-sm text-ink-muted">No changes detected.</p>
+                      )
+                    ) : (
+                      <>
+                        <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm text-ink-muted">
+                          {c.location && <span>{c.location}</span>}
+                          {c.sector && <span>{c.sector}</span>}
+                          {c.industry && <span>{c.industry}</span>}
+                          {c.funding_stage && <span>{c.funding_stage}</span>}
+                          {c.website && <span className="text-navy">{c.website}</span>}
+                        </div>
+                        {c.description && (
+                          <p className="mt-2 max-w-2xl text-sm text-ink-soft">
+                            {c.description}
+                          </p>
+                        )}
+                      </>
+                    )}
                   </div>
-                  {c.description && (
-                    <p className="mt-2 max-w-2xl text-sm text-ink-soft">
-                      {c.description}
-                    </p>
-                  )}
-                </div>
-                <div className="flex flex-col gap-2 sm:flex-row">
-                  <button
-                    onClick={() => act(c.id, "approve")}
-                    title="Publish this company on the site"
-                    className="rounded-lg bg-sector-athletes px-4 py-2 text-sm font-semibold text-white transition hover:brightness-95"
-                  >
-                    Approve &amp; publish
-                  </button>
-                  <button
-                    onClick={() => act(c.id, "reject")}
-                    title="Permanently delete this submission"
-                    className="rounded-lg border border-red-300 px-4 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-50"
-                  >
-                    Reject &amp; delete
-                  </button>
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <button
+                      onClick={() => act(c.id, "approve", isEdit)}
+                      title={isEdit ? "Apply these changes" : "Publish this company on the site"}
+                      className="rounded-lg bg-sector-athletes px-4 py-2 text-sm font-semibold text-white transition hover:brightness-95"
+                    >
+                      {isEdit ? "Approve changes" : "Approve & publish"}
+                    </button>
+                    <button
+                      onClick={() => act(c.id, "reject", isEdit)}
+                      title={isEdit ? "Discard these changes" : "Permanently delete this submission"}
+                      className="rounded-lg border border-red-300 px-4 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-50"
+                    >
+                      {isEdit ? "Discard changes" : "Reject & delete"}
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
