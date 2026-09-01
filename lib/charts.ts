@@ -9,7 +9,7 @@ export type Datum = { name: string; value: number };
 export function industryBreakdown(companies: Company[], top = 9): Datum[] {
   const counts = new Map<string, number>();
   for (const c of companies) {
-    const key = (c.industry || "").trim();
+    const key = (c.industry_name || "").trim();
     if (!key) continue;
     counts.set(key, (counts.get(key) ?? 0) + 1);
   }
@@ -33,8 +33,9 @@ export function growthByYear(companies: Company[]): YearPoint[] {
   const now = new Date().getFullYear();
   const perYear = new Map<number, number>();
   for (const c of companies) {
-    const y = c.founded_year;
-    if (!y || y < 1970 || y > now) continue;
+    if (!c.foundation_date) continue;
+    const y = new Date(c.foundation_date).getFullYear();
+    if (!y || Number.isNaN(y) || y < 1970 || y > now) continue;
     perYear.set(y, (perYear.get(y) ?? 0) + 1);
   }
   const years = Array.from(perYear.keys()).sort((a, b) => a - b);
@@ -56,7 +57,7 @@ export type CityPoint = { city: string; value: number };
 export function cityCounts(companies: Company[]): CityPoint[] {
   const counts = new Map<string, number>();
   for (const c of companies) {
-    const key = (c.location || "").trim();
+    const key = (c.visitor_city || "").trim();
     if (!key) continue;
     counts.set(key, (counts.get(key) ?? 0) + 1);
   }

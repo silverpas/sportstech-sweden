@@ -5,13 +5,11 @@ import { CompanyForm } from "@/components/CompanyForm";
 export default async function EditCompanyPage({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ org_number: string }>;
 }) {
-  const { id } = await params;
-  const numericId = Number(id);
-  if (Number.isNaN(numericId)) notFound();
+  const { org_number: orgNumber } = await params;
 
-  const { company } = await getCompany(numericId);
+  const { company } = await getCompany(orgNumber);
   if (!company) notFound();
 
   return (
@@ -22,14 +20,14 @@ export default async function EditCompanyPage({
           Keep the directory accurate
         </p>
         <h1 className="font-display text-3xl font-bold text-ink sm:text-4xl">
-          Suggest an edit to {company.name}
+          Suggest an edit to {company.legal_name}
         </h1>
         <p className="mt-2 text-ink-soft">
           Changes are reviewed before they go live.
         </p>
       </header>
 
-      <CompanyForm mode="edit" companyId={company.id} initial={company} />
+      <CompanyForm mode="edit" orgNumber={company.org_number} initial={company} />
     </div>
   );
 }

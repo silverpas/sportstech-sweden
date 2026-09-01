@@ -52,7 +52,7 @@ export default function AdminPage() {
     }
   }
 
-  async function act(id: number, action: "approve" | "reject", isEdit: boolean) {
+  async function act(orgNumber: string, action: "approve" | "reject", isEdit: boolean) {
     if (action === "reject") {
       const message = isEdit
         ? "Discard these suggested changes? The company listing will be unaffected."
@@ -64,11 +64,11 @@ export default function AdminPage() {
       const res = await fetch("/api/admin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, id, action }),
+        body: JSON.stringify({ token, org_number: orgNumber, action }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Action failed.");
-      setPending((p) => p.filter((c) => c.id !== id));
+      setPending((p) => p.filter((c) => c.org_number !== orgNumber));
     } catch (e) {
       setError(e instanceof Error ? e.message : "Action failed.");
     }
@@ -116,9 +116,9 @@ export default function AdminPage() {
         </button>
       </div>
       <p className="mb-6 text-sm text-ink-muted">
-        New submissions: <strong className="text-sector-athletes">Approve</strong>{" "}
+        New submissions: <strong className="text-green-600">Approve</strong>{" "}
         publishes the company immediately, <strong className="text-red-600">Reject</strong>{" "}
-        permanently deletes it. Suggested edits: <strong className="text-sector-athletes">Approve</strong>{" "}
+        permanently deletes it. Suggested edits: <strong className="text-green-600">Approve</strong>{" "}
         applies the changes, <strong className="text-ink">Discard</strong> cancels
         them — the company itself is never affected.
       </p>
@@ -135,13 +135,14 @@ export default function AdminPage() {
             const isEdit = Boolean(c.pending_changes);
             const diff = isEdit ? changedFields(c) : [];
             return (
-              <div key={c.id} className="card p-5">
+              <div key={c.org_number} className="card p-5">
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
                       <h3 className="font-display text-base font-semibold text-ink">
-                        {c.name}
+                        {c.legal_name}
                       </h3>
+                      <span className="text-xs text-ink-muted">{c.org_number}</span>
                       {isEdit && (
                         <span className="chip bg-navy/5 text-xs text-navy">
                           Suggested edit
@@ -163,32 +164,24 @@ export default function AdminPage() {
                         <p className="mt-2 text-sm text-ink-muted">No changes detected.</p>
                       )
                     ) : (
-                      <>
-                        <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm text-ink-muted">
-                          {c.location && <span>{c.location}</span>}
-                          {c.sector && <span>{c.sector}</span>}
-                          {c.industry && <span>{c.industry}</span>}
-                          {c.funding_stage && <span>{c.funding_stage}</span>}
-                          {c.website && <span className="text-navy">{c.website}</span>}
-                        </div>
-                        {c.description && (
-                          <p className="mt-2 max-w-2xl text-sm text-ink-soft">
-                            {c.description}
-                          </p>
-                        )}
-                      </>
+                      <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm text-ink-muted">
+                        {c.website && <span className="text-navy">{c.website}</span>}
+                        {c.phone && <span>{c.phone}</span>}
+                        {c.email && <span>{c.email}</span>}
+                        {c.purpose && <span>{c.purpose}</span>}
+                      </div>
                     )}
                   </div>
                   <div className="flex flex-col gap-2 sm:flex-row">
                     <button
-                      onClick={() => act(c.id, "approve", isEdit)}
+                      onClick={() => act(c.org_number, "approve", isEdit)}
                       title={isEdit ? "Apply these changes" : "Publish this company on the site"}
-                      className="rounded-lg bg-sector-athletes px-4 py-2 text-sm font-semibold text-white transition hover:brightness-95"
+                      className="rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white transition hover:brightness-95"
                     >
                       {isEdit ? "Approve changes" : "Approve & publish"}
                     </button>
                     <button
-                      onClick={() => act(c.id, "reject", isEdit)}
+                      onClick={() => act(c.org_number, "reject", isEdit)}
                       title={isEdit ? "Discard these changes" : "Permanently delete this submission"}
                       className="rounded-lg border border-red-300 px-4 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-50"
                     >

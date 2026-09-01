@@ -9,7 +9,7 @@ type Options = {
   sectors: string[];
   industries: string[];
   locations: string[];
-  fundingStages: string[];
+  companyTypes: string[];
 };
 
 const EMPTY = "";
@@ -25,29 +25,32 @@ export function CompaniesExplorer({
   const [sector, setSector] = useState(EMPTY);
   const [industry, setIndustry] = useState(EMPTY);
   const [location, setLocation] = useState(EMPTY);
-  const [funding, setFunding] = useState(EMPTY);
+  const [companyType, setCompanyType] = useState(EMPTY);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return companies.filter((c) => {
-      if (q && !`${c.name} ${c.description ?? ""}`.toLowerCase().includes(q))
+      if (
+        q &&
+        !`${c.legal_name} ${c.purpose ?? ""}`.toLowerCase().includes(q)
+      )
         return false;
       if (sector && c.sector !== sector) return false;
-      if (industry && c.industry !== industry) return false;
-      if (location && c.location !== location) return false;
-      if (funding && c.funding_stage !== funding) return false;
+      if (industry && c.industry_name !== industry) return false;
+      if (location && c.visitor_city !== location) return false;
+      if (companyType && c.company_type !== companyType) return false;
       return true;
     });
-  }, [companies, query, sector, industry, location, funding]);
+  }, [companies, query, sector, industry, location, companyType]);
 
-  const anyFilter = sector || industry || location || funding || query;
+  const anyFilter = sector || industry || location || companyType || query;
 
   const reset = () => {
     setQuery("");
     setSector(EMPTY);
     setIndustry(EMPTY);
     setLocation(EMPTY);
-    setFunding(EMPTY);
+    setCompanyType(EMPTY);
   };
 
   return (
@@ -69,7 +72,7 @@ export function CompaniesExplorer({
           <Select label="Sector" value={sector} onChange={setSector} options={options.sectors} />
           <Select label="Industry" value={industry} onChange={setIndustry} options={options.industries} />
           <Select label="Location" value={location} onChange={setLocation} options={options.locations} />
-          <Select label="Funding stage" value={funding} onChange={setFunding} options={options.fundingStages} />
+          <Select label="Company type" value={companyType} onChange={setCompanyType} options={options.companyTypes} />
 
           {anyFilter && (
             <button
@@ -104,7 +107,7 @@ export function CompaniesExplorer({
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {filtered.map((c) => (
-              <CompanyCard key={c.id} company={c} />
+              <CompanyCard key={c.org_number} company={c} />
             ))}
           </div>
         )}

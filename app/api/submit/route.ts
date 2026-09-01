@@ -11,35 +11,29 @@ export async function POST(request: Request) {
   }
 
   const sanitized = sanitizeCompanyInput(body);
-  if (!sanitized.name) {
+  if (!sanitized.org_number) {
     return NextResponse.json(
-      { error: "Company name is required." },
+      { error: "Organization number is required." },
       { status: 400 }
     );
   }
 
-  const editId = Number(body.id);
-  const isEdit = Number.isFinite(editId) && editId > 0;
-
   try {
     const sb = getServiceClient();
 
-    if (isEdit) {
+    const { data: existing } = await sb
+      .from("companies")
+      .select("org_number")
+      .eq("org_number", sanitized.org_number)
+      .maybeSingle();
+
+    if (existing) {
       // A suggested edit to an already-published company: stash it as a
       // pending change for admin review, without touching the live columns.
-      const { data: existing, error: findError } = await sb
-        .from("companies")
-        .select("id")
-        .eq("id", editId)
-        .single();
-      if (findError || !existing) {
-        return NextResponse.json({ error: "Company not found." }, { status: 404 });
-      }
-
       const { error } = await sb
         .from("companies")
         .update({ pending_changes: sanitized })
-        .eq("id", editId);
+        .eq("org_number", sanitized.org_number);
       if (error) throw error;
     } else {
       const { error } = await sb
@@ -49,8 +43,6 @@ export async function POST(request: Request) {
     }
   } catch (e) {
     const message = e instanceof Error ? e.message : "Unknown error";
-    // Most likely cause: setup.sql hasn't been run (moderation_status/
-    // pending_changes column missing).
     return NextResponse.json(
       {
         error:

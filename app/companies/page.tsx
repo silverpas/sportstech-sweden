@@ -13,9 +13,9 @@ export default async function CompaniesPage() {
 
   const options = {
     sectors: uniqueValues(companies, "sector"),
-    industries: uniqueValues(companies, "industry"),
-    locations: uniqueValues(companies, "location"),
-    fundingStages: uniqueValues(companies, "funding_stage"),
+    industries: uniqueValues(companies, "industry_name"),
+    locations: uniqueValues(companies, "visitor_city"),
+    companyTypes: uniqueValues(companies, "company_type"),
   };
 
   return (

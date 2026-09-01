@@ -7,15 +7,15 @@ import type { Company } from "@/lib/types";
 
 type Props = {
   mode: "create" | "edit";
-  companyId?: number;
+  orgNumber?: string;
   initial?: Partial<Company>;
 };
 
-export function CompanyForm({ mode, companyId, initial }: Props) {
+export function CompanyForm({ mode, orgNumber, initial }: Props) {
   const [status, setStatus] = useState<"idle" | "saving" | "done" | "error">("idle");
   const [error, setError] = useState("");
 
-  const backHref = mode === "edit" && companyId ? `/company/${companyId}` : "/companies";
+  const backHref = mode === "edit" && orgNumber ? `/company/${orgNumber}` : "/companies";
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -24,7 +24,7 @@ export function CompanyForm({ mode, companyId, initial }: Props) {
 
     const formData = new FormData(e.currentTarget);
     const payload: Record<string, unknown> = Object.fromEntries(formData.entries());
-    if (mode === "edit" && companyId) payload.id = companyId;
+    if (mode === "edit" && orgNumber) payload.org_number = orgNumber;
 
     try {
       const res = await fetch("/api/submit", {
@@ -44,7 +44,7 @@ export function CompanyForm({ mode, companyId, initial }: Props) {
   if (status === "done") {
     return (
       <div className="card mx-auto max-w-lg p-8 text-center">
-        <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-full bg-sector-athletes/10 text-sector-athletes">
+        <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-full bg-green-50 text-green-600">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M20 6 9 17l-5-5" />
           </svg>
@@ -70,6 +70,8 @@ export function CompanyForm({ mode, companyId, initial }: Props) {
         {FIELDS.map((f) => {
           const raw = initial?.[f.name as keyof Company];
           const defaultValue = raw === null || raw === undefined ? undefined : String(raw);
+          // org_number is the company's identity — read-only once it exists.
+          const locked = mode === "edit" && f.name === "org_number";
           return (
             <div
               key={f.name}
@@ -77,7 +79,7 @@ export function CompanyForm({ mode, companyId, initial }: Props) {
             >
               <label className="label" htmlFor={f.name}>
                 {f.label}
-                {f.required && <span className="text-sector-fans"> *</span>}
+                {f.required && !locked && <span className="text-red-600"> *</span>}
               </label>
               {f.type === "textarea" ? (
                 <textarea
@@ -94,9 +96,10 @@ export function CompanyForm({ mode, companyId, initial }: Props) {
                   name={f.name}
                   type={f.type === "number" ? "number" : "text"}
                   placeholder={f.placeholder}
-                  required={f.required}
+                  required={f.required && !locked}
+                  disabled={locked}
                   defaultValue={defaultValue}
-                  className="field"
+                  className="field disabled:bg-page disabled:text-ink-muted"
                 />
               )}
             </div>

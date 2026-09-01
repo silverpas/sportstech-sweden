@@ -13,80 +13,33 @@ export async function getCompanies(): Promise<Company[]> {
     .from("companies")
     .select("*")
     .eq("moderation_status", "approved")
-    .order("name");
+    .order("legal_name");
 
   if (!filtered.error) return (filtered.data as Company[]) ?? [];
 
   // Column probably doesn't exist yet — fall back to unfiltered.
-  const all = await sb.from("companies").select("*").order("name");
+  const all = await sb.from("companies").select("*").order("legal_name");
   return (all.data as Company[]) ?? [];
 }
 
-export async function getCompany(id: number): Promise<{
+export async function getCompany(orgNumber: string): Promise<{
   company: Company | null;
-  investors: Investor[];
 }> {
   const sb = getPublicClient();
 
   const { data: company } = await sb
     .from("companies")
     .select("*")
-    .eq("id", id)
+    .eq("org_number", orgNumber)
     .single();
 
-  if (!company) return { company: null, investors: [] };
-
-  // Find this company's investors via the investments link table.
-  const { data: links } = await sb
-    .from("investments")
-    .select("investor_id")
-    .eq("company_id", id);
-
-  const investorIds = (links ?? []).map((l) => l.investor_id);
-  let investors: Investor[] = [];
-  if (investorIds.length) {
-    const { data } = await sb
-      .from("investors")
-      .select("*")
-      .in("id", investorIds)
-      .order("name");
-    investors = (data as Investor[]) ?? [];
-  }
-
-  return { company: company as Company, investors };
+  return { company: (company as Company) ?? null };
 }
 
-export async function getInvestorsWithPortfolio(): Promise<
-  { investor: Investor; companies: { id: number; name: string }[] }[]
-> {
+export async function getInvestors(): Promise<Investor[]> {
   const sb = getPublicClient();
-
-  const [{ data: investors }, { data: links }, { data: companies }] =
-    await Promise.all([
-      sb.from("investors").select("*").order("name"),
-      sb.from("investments").select("company_id, investor_id"),
-      sb.from("companies").select("id, name"),
-    ]);
-
-  const companyById = new Map<number, string>(
-    (companies ?? []).map((c) => [c.id, c.name])
-  );
-
-  const byInvestor = new Map<number, { id: number; name: string }[]>();
-  for (const link of links ?? []) {
-    const name = companyById.get(link.company_id);
-    if (!name) continue;
-    const list = byInvestor.get(link.investor_id) ?? [];
-    list.push({ id: link.company_id, name });
-    byInvestor.set(link.investor_id, list);
-  }
-
-  return (investors as Investor[] ?? []).map((investor) => ({
-    investor,
-    companies: (byInvestor.get(investor.id) ?? []).sort((a, b) =>
-      a.name.localeCompare(b.name)
-    ),
-  }));
+  const { data } = await sb.from("investors").select("*").order("name");
+  return (data as Investor[]) ?? [];
 }
 
 export async function getIncubators(): Promise<Incubator[]> {
@@ -99,7 +52,7 @@ export type Stats = {
   companies: number;
   investors: number;
   incubators: number;
-  totalRaisedMsek: number;
+  totalShareCapital: number;
 };
 
 export async function getStats(companies: Company[]): Promise<Stats> {
@@ -109,8 +62,8 @@ export async function getStats(companies: Company[]): Promise<Stats> {
     sb.from("incubators").select("id", { count: "exact", head: true }),
   ]);
 
-  const totalRaisedMsek = companies.reduce(
-    (sum, c) => sum + (c.raised_total_msek ?? 0),
+  const totalShareCapital = companies.reduce(
+    (sum, c) => sum + (c.share_capital ?? 0),
     0
   );
 
@@ -118,7 +71,7 @@ export async function getStats(companies: Company[]): Promise<Stats> {
     companies: companies.length,
     investors: investors ?? 0,
     incubators: incubators ?? 0,
-    totalRaisedMsek: Math.round(totalRaisedMsek),
+    totalShareCapital: Math.round(totalShareCapital),
   };
 }
 

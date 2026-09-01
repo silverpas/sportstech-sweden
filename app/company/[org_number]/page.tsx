@@ -18,22 +18,24 @@ function Fact({ label, value }: { label: string; value: React.ReactNode }) {
 export default async function CompanyPage({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ org_number: string }>;
 }) {
-  const { id } = await params;
-  const numericId = Number(id);
-  if (Number.isNaN(numericId)) notFound();
+  const { org_number: orgNumber } = await params;
 
-  const { company, investors } = await getCompany(numericId);
+  const { company } = await getCompany(orgNumber);
   if (!company) notFound();
 
-  const initial = (company.name || "?").charAt(0).toUpperCase();
-  const color = sectorColor(company.sector);
+  const initial = (company.legal_name || "?").charAt(0).toUpperCase();
   const website = company.website
     ? company.website.startsWith("http")
       ? company.website
       : `https://${company.website}`
     : null;
+  const foundedYear = company.foundation_date
+    ? new Date(company.foundation_date).getFullYear()
+    : null;
+  const color = sectorColor(company.sector);
+  const key = sectorKey(company.sector);
 
   return (
     <div className="container-page py-10">
@@ -48,7 +50,7 @@ export default async function CompanyPage({
           Back to companies
         </Link>
         <Link
-          href={`/company/${company.id}/edit`}
+          href={`/company/${company.org_number}/edit`}
           className="text-sm text-ink-soft hover:text-navy"
         >
           Suggest an edit
@@ -67,22 +69,20 @@ export default async function CompanyPage({
           </span>
           <div className="flex-1">
             <h1 className="font-display text-3xl font-bold text-ink sm:text-4xl">
-              {company.name}
+              {company.legal_name}
             </h1>
-            {company.legal_name && company.legal_name !== company.name && (
-              <p className="text-sm text-ink-muted">{company.legal_name}</p>
-            )}
+            <p className="text-sm text-ink-muted">Org. number {company.org_number}</p>
             <div className="mt-3 flex flex-wrap gap-2">
               {company.sector && (
                 <span className="chip" style={{ backgroundColor: `${color}1A`, color }}>
-                  {SECTOR_LABELS[sectorKey(company.sector)]}
+                  {SECTOR_LABELS[key]}
                 </span>
               )}
-              {company.industry && (
-                <span className="chip bg-page text-ink-soft">{company.industry}</span>
+              {company.company_type && (
+                <span className="chip bg-navy/5 text-navy">{company.company_type}</span>
               )}
-              {company.funding_stage && (
-                <span className="chip bg-navy/5 text-navy">{company.funding_stage}</span>
+              {company.industry_name && (
+                <span className="chip bg-page text-ink-soft">{company.industry_name}</span>
               )}
               {company.status && (
                 <span className="chip bg-page text-ink-muted">{company.status}</span>
@@ -96,51 +96,34 @@ export default async function CompanyPage({
           )}
         </div>
 
-        {company.description && (
-          <p className="mt-6 max-w-3xl text-ink-soft">{company.description}</p>
+        {company.purpose && (
+          <p className="mt-6 max-w-3xl text-ink-soft">{company.purpose}</p>
         )}
       </div>
 
       {/* Facts */}
       <dl className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-        <Fact label="Location" value={company.location} />
-        <Fact label="Founded" value={company.founded_year} />
-        <Fact label="Employees" value={company.employees} />
-        <Fact label="Product type" value={company.product_type} />
-        <Fact label="Product stage" value={company.product_stage} />
-        <Fact label="Revenue" value={company.revenue_msek != null ? `${company.revenue_msek} MSEK` : null} />
-        <Fact label="Total raised" value={company.raised_total_msek != null ? `${company.raised_total_msek} MSEK` : null} />
-        <Fact label="Funding stage" value={company.funding_stage} />
+        <Fact label="City" value={company.visitor_city} />
+        <Fact label="Municipality" value={company.municipality} />
+        <Fact label="County" value={company.county} />
+        <Fact label="Founded" value={foundedYear} />
+        <Fact label="CEO" value={company.ceo} />
+        <Fact label="Total shareholders" value={company.total_shareholders} />
+        <Fact
+          label="Share capital"
+          value={company.share_capital != null ? `${company.share_capital.toLocaleString()} SEK` : null}
+        />
+        <Fact label="Phone" value={company.phone} />
+        <Fact label="Email" value={company.email} />
+        <Fact label="Alternative names" value={company.alternative_names} />
       </dl>
 
-      {company.comment && (
+      {company.board_members && (
         <div className="mt-6 card p-5">
-          <h2 className="mb-1 font-display text-base font-semibold text-ink">Notes</h2>
-          <p className="text-sm text-ink-soft">{company.comment}</p>
+          <h2 className="mb-1 font-display text-base font-semibold text-ink">Board members</h2>
+          <p className="text-sm text-ink-soft">{company.board_members}</p>
         </div>
       )}
-
-      {/* Investors */}
-      <div className="mt-6 card p-5 sm:p-6">
-        <h2 className="mb-4 font-display text-lg font-semibold text-ink">
-          Investors <span className="text-ink-muted">({investors.length})</span>
-        </h2>
-        {investors.length ? (
-          <div className="flex flex-wrap gap-2">
-            {investors.map((inv) => (
-              <span
-                key={inv.id}
-                className="chip bg-page text-ink-soft"
-                title={inv.description ?? undefined}
-              >
-                {inv.name}
-              </span>
-            ))}
-          </div>
-        ) : (
-          <p className="text-sm text-ink-muted">No investors recorded.</p>
-        )}
-      </div>
     </div>
   );
 }

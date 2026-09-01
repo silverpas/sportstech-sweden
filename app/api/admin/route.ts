@@ -19,7 +19,7 @@ export async function GET(request: Request) {
       .from("companies")
       .select("*")
       .or("moderation_status.eq.pending,pending_changes.not.is.null")
-      .order("id", { ascending: false });
+      .order("org_number", { ascending: false });
     if (error) throw error;
     return NextResponse.json({ pending: data ?? [] });
   } catch (e) {
@@ -30,7 +30,7 @@ export async function GET(request: Request) {
 
 // Approve or reject a submission, or approve/discard a suggested edit.
 export async function POST(request: Request) {
-  let body: { token?: string; id?: number; action?: string };
+  let body: { token?: string; org_number?: string; action?: string };
   try {
     body = await request.json();
   } catch {
@@ -40,7 +40,7 @@ export async function POST(request: Request) {
   if (!authorized(body.token ?? null)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  if (!body.id || !["approve", "reject"].includes(body.action ?? "")) {
+  if (!body.org_number || !["approve", "reject"].includes(body.action ?? "")) {
     return NextResponse.json({ error: "Bad request." }, { status: 400 });
   }
 
@@ -50,7 +50,7 @@ export async function POST(request: Request) {
     const { data: row, error: findError } = await sb
       .from("companies")
       .select("pending_changes")
-      .eq("id", body.id)
+      .eq("org_number", body.org_number)
       .single();
     if (findError || !row) throw findError ?? new Error("Company not found.");
 
@@ -62,13 +62,13 @@ export async function POST(request: Request) {
         const { error } = await sb
           .from("companies")
           .update({ ...(row.pending_changes as Record<string, unknown>), pending_changes: null })
-          .eq("id", body.id);
+          .eq("org_number", body.org_number);
         if (error) throw error;
       } else {
         const { error } = await sb
           .from("companies")
           .update({ pending_changes: null })
-          .eq("id", body.id);
+          .eq("org_number", body.org_number);
         if (error) throw error;
       }
     } else {
@@ -77,10 +77,10 @@ export async function POST(request: Request) {
         const { error } = await sb
           .from("companies")
           .update({ moderation_status: "approved" })
-          .eq("id", body.id);
+          .eq("org_number", body.org_number);
         if (error) throw error;
       } else {
-        const { error } = await sb.from("companies").delete().eq("id", body.id);
+        const { error } = await sb.from("companies").delete().eq("org_number", body.org_number);
         if (error) throw error;
       }
     }

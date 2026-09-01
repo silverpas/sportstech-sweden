@@ -68,7 +68,7 @@ export default async function HomePage() {
           <StatCounter value={stats.companies} label="Companies" />
           <StatCounter value={stats.investors} label="Investors" />
           <StatCounter value={stats.incubators} label="Incubators" />
-          <StatCounter value={stats.totalRaisedMsek} label="MSEK raised" />
+          <StatCounter value={stats.totalShareCapital} label="SEK share capital" />
         </div>
       </section>
 
@@ -165,13 +165,13 @@ export default async function HomePage() {
                 href: "/companies",
                 title: "Companies",
                 count: stats.companies,
-                desc: "Search and filter every startup by sector, industry, city, and funding stage.",
+                desc: "Search and filter every company by sector, industry, city, and company type.",
               },
               {
                 href: "/investors",
                 title: "Investors",
                 count: stats.investors,
-                desc: "Investors active in Swedish SportsTech and the companies they back.",
+                desc: "Investors active in Swedish SportsTech.",
               },
               {
                 href: "/incubators",
