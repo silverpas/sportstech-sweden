@@ -4,6 +4,8 @@ import { useState } from "react";
 import type { Company } from "@/lib/types";
 import { FIELDS } from "@/lib/companyFields";
 import { InvestorsManager } from "@/components/admin/InvestorsManager";
+import { IncubatorsManager } from "@/components/admin/IncubatorsManager";
+import { CompaniesManager } from "@/components/admin/CompaniesManager";
 
 const LABEL_BY_KEY = new Map(FIELDS.map((f) => [f.name, f.label]));
 
@@ -196,7 +198,9 @@ export default function AdminPage() {
         </div>
       )}
 
+      <CompaniesManager token={token} />
       <InvestorsManager token={token} />
+      <IncubatorsManager token={token} />
     </div>
   );
 }
