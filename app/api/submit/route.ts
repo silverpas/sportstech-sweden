@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServiceClient } from "@/lib/supabase";
 import { sanitizeCompanyInput } from "@/lib/companyFields";
+import { errorMessage } from "@/lib/errors";
 
 export async function POST(request: Request) {
   let body: Record<string, unknown>;
@@ -42,7 +43,7 @@ export async function POST(request: Request) {
       if (error) throw error;
     }
   } catch (e) {
-    const message = e instanceof Error ? e.message : "Unknown error";
+    const message = errorMessage(e);
     return NextResponse.json(
       {
         error:

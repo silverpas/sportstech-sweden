@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getServiceClient } from "@/lib/supabase";
+import { errorMessage } from "@/lib/errors";
 
 function authorized(token: string | null): boolean {
   const expected = process.env.ADMIN_TOKEN;
@@ -37,8 +38,7 @@ export async function GET(request: Request) {
     if (error) throw error;
     return NextResponse.json({ investors: data ?? [] });
   } catch (e) {
-    const message = e instanceof Error ? e.message : "Unknown error";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ error: errorMessage(e) }, { status: 500 });
   }
 }
 
@@ -65,8 +65,7 @@ export async function POST(request: Request) {
     if (error) throw error;
     return NextResponse.json({ investor: data });
   } catch (e) {
-    const message = e instanceof Error ? e.message : "Unknown error";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ error: errorMessage(e) }, { status: 500 });
   }
 }
 
@@ -102,8 +101,7 @@ export async function PUT(request: Request) {
     if (error) throw error;
     return NextResponse.json({ investor: data });
   } catch (e) {
-    const message = e instanceof Error ? e.message : "Unknown error";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ error: errorMessage(e) }, { status: 500 });
   }
 }
 
@@ -121,11 +119,14 @@ export async function DELETE(request: Request) {
 
   try {
     const sb = getServiceClient();
+    // Drop any leftover links from the old investor<->company join table
+    // first - they're orphaned data (that link was retired), and would
+    // otherwise block the delete with a foreign key violation.
+    await sb.from("investments").delete().eq("investor_id", id);
     const { error } = await sb.from("investors").delete().eq("id", id);
     if (error) throw error;
     return NextResponse.json({ ok: true });
   } catch (e) {
-    const message = e instanceof Error ? e.message : "Unknown error";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ error: errorMessage(e) }, { status: 500 });
   }
 }
