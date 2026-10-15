@@ -31,12 +31,21 @@ function changedFields(c: Company): { key: string; label: string; from: string; 
   return out;
 }
 
+const TABS = [
+  { key: "pending", label: "Pending" },
+  { key: "companies", label: "Companies" },
+  { key: "investors", label: "Investors" },
+  { key: "incubators", label: "Incubators" },
+] as const;
+type TabKey = (typeof TABS)[number]["key"];
+
 export default function AdminPage() {
   const [token, setToken] = useState("");
   const [authed, setAuthed] = useState(false);
   const [pending, setPending] = useState<Company[]>([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [tab, setTab] = useState<TabKey>("pending");
 
   async function load(tk: string) {
     setLoading(true);
@@ -110,97 +119,121 @@ export default function AdminPage() {
 
   return (
     <div className="container-page py-10">
-      <div className="mb-2 flex items-center justify-between">
-        <h1 className="font-display text-2xl font-bold text-ink">
-          Pending submissions {pending.length > 0 && `(${pending.length})`}
-        </h1>
-        <button onClick={() => load(token)} className="btn-ghost text-sm">
-          Refresh
-        </button>
+      <h1 className="mb-4 font-display text-2xl font-bold text-ink">Admin</h1>
+
+      <div className="mb-8 flex gap-1 border-b border-line">
+        {TABS.map((t) => (
+          <button
+            key={t.key}
+            onClick={() => setTab(t.key)}
+            className={`relative px-4 py-2.5 text-sm font-medium transition ${
+              tab === t.key ? "text-navy" : "text-ink-soft hover:text-ink"
+            }`}
+          >
+            {t.label}
+            {t.key === "pending" && pending.length > 0 && ` (${pending.length})`}
+            {tab === t.key && (
+              <span className="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-gold" />
+            )}
+          </button>
+        ))}
       </div>
-      <p className="mb-6 text-sm text-ink-muted">
-        New submissions: <strong className="text-green-600">Approve</strong>{" "}
-        publishes the company immediately, <strong className="text-red-600">Reject</strong>{" "}
-        permanently deletes it. Suggested edits: <strong className="text-green-600">Approve</strong>{" "}
-        applies the changes, <strong className="text-ink">Discard</strong> cancels
-        them — the company itself is never affected.
-      </p>
 
       {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
 
-      {pending.length === 0 ? (
-        <div className="card grid place-items-center p-16 text-center text-ink-soft">
-          No pending submissions. 🎉
-        </div>
-      ) : (
-        <div className="grid gap-4">
-          {pending.map((c) => {
-            const isEdit = Boolean(c.pending_changes);
-            const diff = isEdit ? changedFields(c) : [];
-            return (
-              <div key={c.org_number} className="card p-5">
-                <div className="flex flex-wrap items-start justify-between gap-4">
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="font-display text-base font-semibold text-ink">
-                        {c.legal_name}
-                      </h3>
-                      <span className="text-xs text-ink-muted">{c.org_number}</span>
-                      {isEdit && (
-                        <span className="chip bg-navy/5 text-xs text-navy">
-                          Suggested edit
-                        </span>
-                      )}
-                    </div>
+      {tab === "pending" && (
+        <>
+          <div className="mb-2 flex items-center justify-between">
+            <h2 className="font-display text-xl font-bold text-ink">
+              Pending submissions {pending.length > 0 && `(${pending.length})`}
+            </h2>
+            <button onClick={() => load(token)} className="btn-ghost text-sm">
+              Refresh
+            </button>
+          </div>
+          <p className="mb-6 text-sm text-ink-muted">
+            New submissions: <strong className="text-green-600">Approve</strong>{" "}
+            publishes the company immediately, <strong className="text-red-600">Reject</strong>{" "}
+            permanently deletes it. Suggested edits: <strong className="text-green-600">Approve</strong>{" "}
+            applies the changes, <strong className="text-ink">Discard</strong> cancels
+            them — the company itself is never affected.
+          </p>
 
-                    {isEdit ? (
-                      diff.length > 0 ? (
-                        <ul className="mt-2 space-y-1 text-sm text-ink-soft">
-                          {diff.map((d) => (
-                            <li key={d.key}>
-                              <span className="text-ink-muted">{d.label}:</span> {d.from}{" "}
-                              <span className="text-ink-muted">→</span> {d.to}
-                            </li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <p className="mt-2 text-sm text-ink-muted">No changes detected.</p>
-                      )
-                    ) : (
-                      <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm text-ink-muted">
-                        {c.website && <span className="text-navy">{c.website}</span>}
-                        {c.phone && <span>{c.phone}</span>}
-                        {c.email && <span>{c.email}</span>}
-                        {c.purpose && <span>{c.purpose}</span>}
+          {pending.length === 0 ? (
+            <div className="card grid place-items-center p-16 text-center text-ink-soft">
+              No pending submissions. 🎉
+            </div>
+          ) : (
+            <div className="grid gap-4">
+              {pending.map((c) => {
+                const isEdit = Boolean(c.pending_changes);
+                const diff = isEdit ? changedFields(c) : [];
+                return (
+                  <div key={c.org_number} className="card p-5">
+                    <div className="flex flex-wrap items-start justify-between gap-4">
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h3 className="font-display text-base font-semibold text-ink">
+                            {c.legal_name}
+                          </h3>
+                          <span className="text-xs text-ink-muted">{c.org_number}</span>
+                          {isEdit && (
+                            <span className="chip bg-navy/5 text-xs text-navy">
+                              Suggested edit
+                            </span>
+                          )}
+                        </div>
+
+                        {isEdit ? (
+                          diff.length > 0 ? (
+                            <ul className="mt-2 space-y-1 text-sm text-ink-soft">
+                              {diff.map((d) => (
+                                <li key={d.key}>
+                                  <span className="text-ink-muted">{d.label}:</span> {d.from}{" "}
+                                  <span className="text-ink-muted">→</span> {d.to}
+                                </li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <p className="mt-2 text-sm text-ink-muted">No changes detected.</p>
+                          )
+                        ) : (
+                          <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm text-ink-muted">
+                            {c.website && <span className="text-navy">{c.website}</span>}
+                            {c.phone && <span>{c.phone}</span>}
+                            {c.email && <span>{c.email}</span>}
+                            {c.purpose && <span>{c.purpose}</span>}
+                          </div>
+                        )}
                       </div>
-                    )}
+                      <div className="flex flex-col gap-2 sm:flex-row">
+                        <button
+                          onClick={() => act(c.org_number, "approve", isEdit)}
+                          title={isEdit ? "Apply these changes" : "Publish this company on the site"}
+                          className="rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white transition hover:brightness-95"
+                        >
+                          {isEdit ? "Approve changes" : "Approve & publish"}
+                        </button>
+                        <button
+                          onClick={() => act(c.org_number, "reject", isEdit)}
+                          title={isEdit ? "Discard these changes" : "Permanently delete this submission"}
+                          className="rounded-lg border border-red-300 px-4 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-50"
+                        >
+                          {isEdit ? "Discard changes" : "Reject & delete"}
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex flex-col gap-2 sm:flex-row">
-                    <button
-                      onClick={() => act(c.org_number, "approve", isEdit)}
-                      title={isEdit ? "Apply these changes" : "Publish this company on the site"}
-                      className="rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white transition hover:brightness-95"
-                    >
-                      {isEdit ? "Approve changes" : "Approve & publish"}
-                    </button>
-                    <button
-                      onClick={() => act(c.org_number, "reject", isEdit)}
-                      title={isEdit ? "Discard these changes" : "Permanently delete this submission"}
-                      className="rounded-lg border border-red-300 px-4 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-50"
-                    >
-                      {isEdit ? "Discard changes" : "Reject & delete"}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+                );
+              })}
+            </div>
+          )}
+        </>
       )}
 
-      <CompaniesManager token={token} />
-      <InvestorsManager token={token} />
-      <IncubatorsManager token={token} />
+      {tab === "companies" && <CompaniesManager token={token} />}
+      {tab === "investors" && <InvestorsManager token={token} />}
+      {tab === "incubators" && <IncubatorsManager token={token} />}
     </div>
   );
 }
